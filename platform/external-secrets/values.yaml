@@ -4,6 +4,9 @@ installCRDs: true
 
 replicaCount: 1
 
+nodeSelector:
+  kubernetes.io/hostname: ubuntu
+
 resources:
   requests:
     cpu: 50m
@@ -13,6 +16,10 @@ resources:
 
 webhook:
   replicaCount: 1
+  nodeSelector:
+    kubernetes.io/hostname: ubuntu
 
 certController:
   replicaCount: 1
+  nodeSelector:
+    kubernetes.io/hostname: ubuntu
