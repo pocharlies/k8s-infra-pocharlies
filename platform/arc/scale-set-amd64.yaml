@@ -11,7 +11,7 @@
 #     --from-literal=github_app_installation_id=<INSTALL_ID> \
 #     --from-file=github_app_private_key=<path/to/private.pem>
 
-githubConfigUrl: https://github.com/<YOUR_GITHUB_USER_OR_ORG>
+githubConfigUrl: https://github.com/pocharlies
 githubConfigSecret: arc-github-app-secret
 
 runnerScaleSetName: arc-amd64
