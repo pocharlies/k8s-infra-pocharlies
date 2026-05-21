@@ -1,0 +1,52 @@
+# NVIDIA GPU Operator — use host drivers, deploy device-plugin + toolkit
+driver:
+  enabled: false   # drivers are installed on hosts already
+
+toolkit:
+  enabled: true
+
+devicePlugin:
+  enabled: true
+  config:
+    name: ""  # default config; time-slicing added later via ConfigMap
+
+cdi:
+  enabled: true
+  default: true
+
+migManager:
+  enabled: false   # GB10/RTX consumer don't support MIG
+
+nodeStatusExporter:
+  enabled: true
+
+dcgm:
+  enabled: true
+
+dcgmExporter:
+  enabled: true
+
+gfd:
+  enabled: true
+
+operator:
+  defaultRuntime: containerd
+  cleanupCRD: false
+
+# Schedule only on labeled GPU nodes
+daemonsets:
+  tolerations: []
+  nodeSelector:
+    nvidia.com/gpu: "true"
+
+# Override node feature discovery
+nfd:
+  enabled: true   # GPU Operator includes NFD subchart
+  nodefeaturerules:
+    enabled: true
+
+validator:
+  driver:
+    env:
+      - name: DISABLE_DEV_CHAR_SYMLINK_CREATION
+        value: "true"

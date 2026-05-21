@@ -1,0 +1,20 @@
+---
+# Wildcard certificate for all public domains: *.e-dani.com
+# Used by Traefik EDGE for TLS termination on sauvage
+# cert-manager DNS-01 via Cloudflare (same issuer as LAN wildcard)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-public-tls
+  namespace: traefik-edge
+spec:
+  secretName: wildcard-public-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.e-dani.com"
+  dnsNames:
+    - "*.e-dani.com"
+    - "e-dani.com"
+  # Renew 30 days before expiry
+  renewBefore: 720h

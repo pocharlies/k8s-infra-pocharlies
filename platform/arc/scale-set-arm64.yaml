@@ -1,0 +1,32 @@
+# ARC Runner Scale Set — arm64 (dgx1/dgx2, native ARM builds)
+# Deploy on dgx nodes for native linux/arm64 image builds (avoids QEMU slowness)
+githubConfigUrl: https://github.com/<YOUR_GITHUB_USER_OR_ORG>
+githubConfigSecret: arc-github-app-secret
+
+runnerScaleSetName: arc-arm64
+
+minRunners: 0
+maxRunners: 2
+
+template:
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: arm64
+      topology: lan
+    tolerations: []
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            memory: 4Gi
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+    volumes:
+      - name: work
+        emptyDir: {}

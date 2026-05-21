@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-bootstrap-buckets
+  namespace: minio
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        kubernetes.io/hostname: sauvage
+      tolerations:
+        - key: role
+          operator: Equal
+          value: edge
+          effect: NoSchedule
+      containers:
+        - name: mc
+          image: minio/mc:RELEASE.2025-04-08T15-39-49Z
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-root
+                  key: root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-root
+                  key: root-password
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mc alias set local http://minio-s3:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              for b in velero-backups loki-chunks harbor-blobs k3s-etcd-snapshots image-cache longhorn-backups; do
+                mc mb --ignore-existing local/$b
+                mc anonymous set none local/$b
+              done
+              echo "buckets:"
+              mc ls local/

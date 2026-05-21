@@ -1,0 +1,44 @@
+# ARC Runner Scale Set — amd64 (x86, CI builds + generic tasks)
+# Helm chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+# Namespace: arc-runners
+# Auth: GitHub App (see arc-github-app-secret below)
+#
+# After cert: Create GitHub App at https://github.com/settings/apps
+#   Permissions: Actions (R/W), Metadata (R), Administration (R/W - for repo-level runners)
+#   Install on org/user, note App ID + Private Key
+#   kubectl create secret generic arc-github-app-secret -n arc-systems \
+#     --from-literal=github_app_id=<APP_ID> \
+#     --from-literal=github_app_installation_id=<INSTALL_ID> \
+#     --from-file=github_app_private_key=<path/to/private.pem>
+
+githubConfigUrl: https://github.com/<YOUR_GITHUB_USER_OR_ORG>
+githubConfigSecret: arc-github-app-secret
+
+runnerScaleSetName: arc-amd64
+
+minRunners: 0
+maxRunners: 4
+
+template:
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+      topology: lan
+    tolerations: []
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            memory: 4Gi
+        # BuildKit sidecar socket for multi-arch builds
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+    volumes:
+      - name: work
+        emptyDir: {}

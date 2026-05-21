@@ -1,0 +1,81 @@
+# Velero — cluster backups to MinIO (S3-compatible)
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.0
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero-backups
+      default: true
+      config:
+        region: us-east-1
+        s3ForcePathStyle: true
+        s3Url: http://minio-s3.minio.svc.cluster.local:9000
+        publicUrl: https://s3.lan.e-dani.com
+      credential:
+        name: velero-minio-creds
+        key: cloud
+
+  volumeSnapshotLocation:
+    - name: default
+      provider: aws
+      config:
+        region: us-east-1
+
+  defaultRepoMaintenanceFrequency: 168h0m0s
+  garbageCollectionFrequency: 1h0m0s
+  features: ""
+  logLevel: info
+  # Pin kopia maintenance jobs to x86 — dgx/sauvage nodes can't reach MinIO
+  # ClusterIP because the flannel overlay doesn't cross the WG tunnel from LAN→sauvage.
+  repositoryMaintenanceJob:
+    repositoryConfigData:
+      global:
+        keepLatestMaintenanceJobs: 3
+        loadAffinity:
+          - nodeSelector:
+              matchExpressions:
+                - key: kubernetes.io/arch
+                  operator: In
+                  values: ["amd64"]
+                - key: topology
+                  operator: In
+                  values: ["lan"]
+
+# Use node-agent for filesystem backups (CSI volumes)
+deployNodeAgent: true
+nodeAgent:
+  privileged: true
+  nodeSelector:
+    topology: lan
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Velero server
+nodeSelector:
+  topology: lan
+  kubernetes.io/arch: amd64
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# Don't create the credential secret via chart — we'll apply it separately
+credentials:
+  useSecret: true
+  existingSecret: velero-minio-creds
+
+snapshotsEnabled: true
+backupsEnabled: true
+# deployRestic removed in newer chart; node-agent uses Kopia internally

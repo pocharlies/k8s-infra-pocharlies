@@ -1,0 +1,122 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-dibanez
+---
+# Home dir: NFS warm so it survives pod restarts + is accessible from x86 host directly
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-dibanez
+  namespace: dev-dibanez
+spec:
+  accessModes: [ReadWriteMany]
+  resources: { requests: { storage: 50Gi } }
+  storageClassName: nfs-warm
+---
+# Config dir: Longhorn for VS Code extensions + settings (faster IO than NFS)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server-config
+  namespace: dev-dibanez
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 5Gi } }
+  storageClassName: longhorn
+---
+# Password for code-server (auth via Authelia primarily, this is fallback)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-auth
+  namespace: dev-dibanez
+type: Opaque
+stringData:
+  PASSWORD: "Oq3JRF2WuXuNnupHDYB77N3C"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server
+  namespace: dev-dibanez
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: code-server } }
+  template:
+    metadata: { labels: { app: code-server } }
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        topology: lan
+        kubernetes.io/arch: amd64
+      securityContext:
+        runAsUser: 0      # required to chown /home + install packages
+        fsGroup: 1000
+      containers:
+        - name: code-server
+          image: codercom/code-server:4.105.2
+          args:
+            - --bind-addr=0.0.0.0:8080
+            - --auth=password
+            - --user-data-dir=/config
+            - --extensions-dir=/config/extensions
+            - --disable-telemetry
+            - --disable-update-check
+            - /home/dibanez
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - name: PASSWORD
+              valueFrom: { secretKeyRef: { name: code-server-auth, key: PASSWORD } }
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Madrid
+            - name: DEFAULT_WORKSPACE
+              value: /home/dibanez
+          volumeMounts:
+            - { name: home,   mountPath: /home/dibanez }
+            - { name: config, mountPath: /config }
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { memory: 4Gi }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - { name: home,   persistentVolumeClaim: { claimName: home-dibanez } }
+        - { name: config, persistentVolumeClaim: { claimName: code-server-config } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server
+  namespace: dev-dibanez
+spec:
+  selector: { app: code-server }
+  ports:
+    - { name: http, port: 80, targetPort: 8080 }
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: code-server
+  namespace: dev-dibanez
+spec:
+  entryPoints: [websecure]
+  routes:
+    - match: Host(`code.lan.e-dani.com`)
+      kind: Rule
+      services:
+        - name: code-server
+          port: 80
+      middlewares:
+        - { name: authelia, namespace: authelia }
+  tls:
+    secretName: wildcard-lan-tls

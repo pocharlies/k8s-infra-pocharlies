@@ -1,0 +1,50 @@
+---
+# Daily backup of all critical stateful + admin namespaces
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-critical
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"   # 03:00 UTC daily
+  template:
+    ttl: 720h0m0s   # 30 days retention
+    includedNamespaces:
+      - vault
+      - harbor
+      - argocd
+      - longhorn-system
+      - cert-manager
+      - external-secrets-operator
+      - external-dns
+      - monitoring
+      - minio
+      - metallb-system
+      - traefik-lan
+      - kube-system
+    snapshotMoveData: true
+    defaultVolumesToFsBackup: true
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+---
+# Weekly backup of everything else (apps, etc.)
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-all
+  namespace: velero
+spec:
+  schedule: "0 5 * * 0"   # Sunday 05:00 UTC
+  template:
+    ttl: 2160h0m0s   # 90 days retention
+    includeClusterResources: true
+    excludedNamespaces:
+      - velero
+      - kube-public
+      - kube-node-lease
+    snapshotMoveData: true
+    defaultVolumesToFsBackup: true
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default

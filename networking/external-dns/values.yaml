@@ -1,0 +1,40 @@
+# external-dns — Cloudflare provider
+provider:
+  name: cloudflare
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token
+        key: api-token
+
+policy: upsert-only   # never delete records — safe during migration
+domainFilters:
+  - e-dani.com
+txtOwnerId: k3s-x86-home
+interval: 1m
+logLevel: info
+
+sources:
+  - service
+  - ingress
+  - traefik-proxy
+
+# LAN IngressRoutes don't carry a target annotation, so external-dns can't determine
+# the IP automatically from the traefik-proxy source alone.
+# defaultTargets provides the fallback: Traefik LAN VIP (192.168.50.240).
+# Public IngressRoutes on sauvage override this via:
+#   external-dns.alpha.kubernetes.io/target: "57.129.17.172"
+extraArgs:
+  - --default-targets=192.168.50.240
+
+# Cloudflare defaults: DNS-only (not proxied). Annotate Ingress/Service with
+# external-dns.alpha.kubernetes.io/cloudflare-proxied: "true" to enable orange-cloud.
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

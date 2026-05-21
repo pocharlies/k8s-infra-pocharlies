@@ -1,0 +1,159 @@
+---
+# POLICY 1: Block :latest tag in production namespaces
+# Audit mode initially; switch to Enforce when builds are stable in Harbor
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Tag
+    policies.kyverno.io/description: >
+      Require containers to use explicit image tags.
+      Using :latest makes rollbacks impossible and breaks GitOps.
+spec:
+  validationFailureAction: Audit   # TODO: switch to Enforce post-Phase-8
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values:
+                      - kube-system
+                      - kube-public
+                      - kube-node-lease
+                      - longhorn-system
+                      - velero
+      validate:
+        message: "Image tag ':latest' is not allowed. Use an explicit tag or digest."
+        deny:
+          conditions:
+            any:
+              - key: "{{ images.containers.*.tag[] | [?@ == 'latest'] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+---
+# POLICY 2: Restrict images to Harbor (homelab/cache projects) + trusted sources
+# Audit mode until Harbor cache proxies are stable
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+  annotations:
+    policies.kyverno.io/title: Restrict Image Registries
+    policies.kyverno.io/description: >
+      Images must come from Harbor (homelab, cache, library projects),
+      trusted k8s system registries, or approved public registries.
+spec:
+  validationFailureAction: Audit   # TODO: Enforce after all builds pushed to Harbor
+  background: true
+  rules:
+    - name: validate-registries
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values:
+                      - kube-system
+                      - kube-public
+                      - kube-node-lease
+      validate:
+        message: >
+          Images must use harbor.e-dani.com, registry.k8s.io, gcr.io/k8s-staging-*,
+          quay.io, ghcr.io, docker.io/library, or nvcr.io/nvidia.
+          Build and push to harbor.e-dani.com/homelab/ for private images.
+        deny:
+          conditions:
+            all:
+              - key: "{{ images.containers.*.registry[] }}"
+                operator: AnyNotIn
+                value:
+                  - harbor.e-dani.com
+                  - registry.k8s.io
+                  - gcr.io
+                  - quay.io
+                  - ghcr.io
+                  - docker.io
+                  - nvcr.io
+                  - ""   # relative images (local)
+---
+# POLICY 3: Require resource requests and limits on all containers
+# Prevents unbounded pods from starving other workloads
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-memory-limit
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values:
+                      - kube-system
+                      - kube-public
+                      - kube-node-lease
+                      - longhorn-system
+      validate:
+        message: "All containers must set resources.limits.memory."
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                resources:
+                  limits:
+                    memory: "?*"
+---
+# POLICY 4: Disallow privileged containers in production namespaces
+# System namespaces are excluded (GPU operator, Longhorn need privilege)
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Disallow Privileged Containers
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: no-privileged
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values:
+                      - kube-system
+                      - kube-public
+                      - kube-node-lease
+                      - longhorn-system
+                      - gpu-operator
+                      - nvidia-gpu-operator
+      validate:
+        message: "Privileged containers are not allowed."
+        pattern:
+          spec:
+            containers:
+              - =(securityContext):
+                  =(privileged): false

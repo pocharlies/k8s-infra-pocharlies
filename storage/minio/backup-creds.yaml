@@ -1,0 +1,36 @@
+---
+# minio-backup-creds — shared S3 credentials for CloudNativePG barman backups
+# Used by: teslamate-postgres, shared-postgres (skirmshop), and any future CNPG cluster.
+# Created in each app namespace via ExternalSecret below.
+#
+# Vault path: secret/minio/backup-user
+# vault kv put secret/minio/backup-user \
+#   ACCESS_KEY_ID=backup-user \
+#   SECRET_ACCESS_KEY=<random-password>
+# Then create the MinIO user in the MinIO console with policy:
+#   s3:GetBucketLocation, s3:GetObject, s3:PutObject, s3:ListBucket on velero-backups/*
+#
+# ClusterExternalSecret auto-creates this Secret in every namespace that has CNPG clusters.
+apiVersion: external-secrets.io/v1
+kind: ClusterExternalSecret
+metadata:
+  name: minio-backup-creds
+spec:
+  externalSecretName: minio-backup-creds
+  namespaceSelectors:
+    - matchLabels:
+        cnpg-backup: "true"
+  refreshTime: 1h
+  externalSecretSpec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: vault-backend
+      kind: ClusterSecretStore
+    target:
+      name: minio-backup-creds
+      creationPolicy: Owner
+    data:
+      - secretKey: ACCESS_KEY_ID
+        remoteRef: { key: secret/minio/backup-user, property: ACCESS_KEY_ID }
+      - secretKey: SECRET_ACCESS_KEY
+        remoteRef: { key: secret/minio/backup-user, property: SECRET_ACCESS_KEY }

@@ -1,0 +1,29 @@
+# CloudNativePG Operator — PostgreSQL cluster manager
+# Helm chart: cnpg/cloudnative-pg
+# Must be installed BEFORE any postgresql.cnpg.io/v1 Cluster resources.
+# Manages: teslamate-postgres, shared-postgres (skirmshop/pocharlies/skirmbooks),
+#          litellm-postgres (future, Phase 9)
+#
+# Install order: deploy this via Helm first, then ArgoCD can manage CNPG clusters.
+# Alternatively use a sync-wave annotation (-10) in ArgoCD to install operator first.
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 200Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+# Prometheus metrics
+monitoring:
+  podMonitorEnabled: true
+  grafanaDashboard:
+    create: true
+
+# Node selector — operator can run on any LAN node
+nodeSelector:
+  topology: lan
+  kubernetes.io/arch: amd64

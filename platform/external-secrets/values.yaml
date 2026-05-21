@@ -1,0 +1,18 @@
+# External Secrets Operator — syncs Vault secrets into k8s Secrets
+# Helm chart: external-secrets/external-secrets
+installCRDs: true
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+webhook:
+  replicaCount: 1
+
+certController:
+  replicaCount: 1

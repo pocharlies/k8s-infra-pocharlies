@@ -1,0 +1,54 @@
+# Longhorn — block storage replicated 3x on LAN nodes (exclude sauvage edge)
+defaultSettings:
+  defaultDataPath: /var/lib/longhorn
+  defaultReplicaCount: 3
+  storageOverProvisioningPercentage: 100
+  storageMinimalAvailablePercentage: 15
+  concurrentReplicaRebuildPerNodeLimit: 1
+  guaranteedInstanceManagerCPU: 12
+  # System-managed components must run on every storage node, regardless of arch.
+  # Multi-arch (amd64 x86 + arm64 dgx) — let CSI plugin DaemonSet land everywhere
+  # that has topology=lan label. Excluding sauvage (topology=remote).
+  systemManagedComponentsNodeSelector: "topology:lan"
+  # Soft anti-affinity so replicas spread but won't fail to schedule
+  replicaSoftAntiAffinity: true
+  replicaZoneSoftAntiAffinity: true
+  # Backup target — will configure post-MinIO
+  # backupTarget: s3://longhorn-backups@us-east-1/
+  taintToleration: ""
+
+persistence:
+  defaultClass: true
+  defaultClassReplicaCount: 3
+  reclaimPolicy: Retain
+
+# Node selector — only LAN nodes with topology=lan and no edge taint
+longhornManager:
+  nodeSelector:
+    topology: lan
+  tolerations: []
+
+longhornDriver:
+  nodeSelector:
+    topology: lan
+
+longhornUI:
+  replicas: 1
+  nodeSelector:
+    topology: lan
+
+# Exclude sauvage and any non-lan node from being a Longhorn node
+longhornAdmissionWebhook:
+  nodeSelector:
+    topology: lan
+
+# CSI driver settings
+csi:
+  attacherReplicaCount: 2
+  provisionerReplicaCount: 2
+  resizerReplicaCount: 2
+  snapshotterReplicaCount: 2
+
+# Ingress disabled here; expose via Traefik IngressRoute later
+ingress:
+  enabled: false

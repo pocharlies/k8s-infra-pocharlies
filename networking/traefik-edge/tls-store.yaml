@@ -1,0 +1,12 @@
+---
+# Global TLSStore — Traefik EDGE uses this wildcard cert for all IngressRoutes
+# that don't specify an explicit secretName.
+# The wildcard-public-tls secret is created by cert-manager in the traefik-edge namespace.
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: default
+  namespace: traefik-edge
+spec:
+  defaultCertificate:
+    secretName: wildcard-public-tls

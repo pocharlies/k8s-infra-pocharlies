@@ -1,0 +1,77 @@
+# Traefik LAN values — internal ingress, exposed via MetalLB VIP 192.168.50.240
+deployment:
+  replicas: 1
+
+ingressClass:
+  enabled: true
+  name: traefik-lan
+  isDefaultClass: true
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+    publishedService:
+      enabled: true
+
+ports:
+  web:
+    port: 8000
+    expose:
+      default: true
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    expose:
+      default: true
+    exposedPort: 443
+    protocol: TCP
+    http3:
+      enabled: false
+  metrics:
+    port: 9100
+    expose:
+      default: true
+    exposedPort: 9100
+    protocol: TCP
+
+additionalArguments:
+  - --entrypoints.web.http.redirections.entrypoint.to=websecure
+  - --entrypoints.web.http.redirections.entrypoint.scheme=https
+  - --entrypoints.websecure.http.tls=true
+
+service:
+  type: LoadBalancer
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.50.240
+  spec:
+    externalTrafficPolicy: Local
+
+# Dashboard — internal only, will protect with auth later
+ingressRoute:
+  dashboard:
+    enabled: false   # enable later behind Authelia
+
+logs:
+  access:
+    enabled: true
+    format: json
+  general:
+    level: INFO
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+# Allow some resilience
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 512Mi

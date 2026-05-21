@@ -1,0 +1,32 @@
+---
+# Wildcard cert for *.lan.e-dani.com (internal services)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-lan
+  namespace: traefik-lan
+spec:
+  secretName: wildcard-lan-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.lan.e-dani.com"
+  dnsNames:
+    - "*.lan.e-dani.com"
+    - lan.e-dani.com
+---
+# Wildcard cert for *.e-dani.com (public services — will move to traefik-edge ns later)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-edani
+  namespace: traefik-lan
+spec:
+  secretName: wildcard-edani-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.e-dani.com"
+  dnsNames:
+    - "*.e-dani.com"
+    - e-dani.com

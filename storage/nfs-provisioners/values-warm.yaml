@@ -1,0 +1,32 @@
+# NFS Subdir External Provisioner — StorageClass: nfs-warm
+# NFS server: x86 (192.168.50.142), path: /srv/nfs/k8s-warm
+# Helm chart: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+nfs:
+  server: 192.168.50.142
+  path: /srv/nfs/k8s-warm
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+    - rsize=1048576
+    - wsize=1048576
+    - timeo=600
+    - retrans=2
+
+storageClass:
+  name: nfs-warm
+  defaultClass: false
+  reclaimPolicy: Retain
+  archiveOnDelete: true   # rename PV dir instead of deleting
+  pathPattern: "${.PVC.namespace}/${.PVC.name}"
+
+replicaCount: 1
+nodeSelector:
+  topology: lan
+  kubernetes.io/arch: amd64
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    memory: 128Mi

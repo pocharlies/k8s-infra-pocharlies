@@ -1,0 +1,102 @@
+# Harbor — private container registry with Trivy scanning + S3 blobs on MinIO
+expose:
+  type: clusterIP
+  tls:
+    enabled: false   # TLS termination at Traefik
+  clusterIP:
+    name: harbor
+
+externalURL: https://harbor.lan.e-dani.com
+
+# pin storage type to S3 (MinIO)
+persistence:
+  enabled: true
+  resourcePolicy: keep
+  persistentVolumeClaim:
+    registry:
+      size: 5Gi
+      storageClass: longhorn
+    jobservice:
+      jobLog:
+        size: 1Gi
+        storageClass: longhorn
+    database:
+      size: 5Gi
+      storageClass: longhorn
+    redis:
+      size: 1Gi
+      storageClass: longhorn
+    trivy:
+      size: 5Gi
+      storageClass: longhorn
+  imageChartStorage:
+    disableredirect: true   # never redirect blob fetches to S3 — node containerd can't resolve *.svc.cluster.local
+    type: s3
+    s3:
+      region: us-east-1
+      bucket: harbor-blobs
+      accesskey: dibanez
+      secretkey: "ChangeMe-MinIO-Bootstrap-2026!"
+      regionendpoint: http://minio-s3.minio.svc.cluster.local:9000
+      secure: false
+      v4auth: true
+
+harborAdminPassword: "ChangeMe-Harbor-Bootstrap-2026!"
+
+# Internal TLS off (Traefik does TLS)
+internalTLS:
+  enabled: false
+
+trivy:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Disable Notary (deprecated)
+notary:
+  enabled: false
+
+chartmuseum:
+  enabled: false   # use OCI charts (modern Helm)
+
+# Pin to AMD64 (Harbor images are amd64-only as of 2024) — only x86 LAN node qualifies
+# (sauvage is amd64 but tainted role=edge:NoSchedule)
+nodeSelector:
+  kubernetes.io/arch: amd64
+
+# Limit replicas for homelab — propagate arch nodeSelector everywhere
+portal:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
+core:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
+jobservice:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
+registry:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
+trivy:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
+nginx:
+  nodeSelector:
+    kubernetes.io/arch: amd64
+database:
+  internal:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+redis:
+  internal:
+    nodeSelector:
+      kubernetes.io/arch: amd64

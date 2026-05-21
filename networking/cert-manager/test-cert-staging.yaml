@@ -1,0 +1,15 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-lan-staging
+  namespace: cert-manager
+spec:
+  secretName: wildcard-lan-staging-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  commonName: "*.lan.e-dani.com"
+  dnsNames:
+    - "*.lan.e-dani.com"
+    - lan.e-dani.com
