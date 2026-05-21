@@ -1,0 +1,81 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-shared
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.2
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: switchover
+  enableSuperuserAccess: true
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      work_mem: "16MB"
+      maintenance_work_mem: "128MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      log_statement: "ddl"
+      log_min_duration_statement: "1000"
+
+  storage:
+    storageClass: longhorn
+    size: 20Gi
+
+  walStorage:
+    storageClass: longhorn
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+  monitoring:
+    enablePodMonitor: false
+
+  managed:
+    roles:
+      - name: n8n
+        ensure: present
+        login: true
+        passwordSecret:
+          name: n8n-db-credentials
+        comment: "n8n workflow automation (repo: pocharlies/k8s-n8n-pocharlies)"
+
+  backup:
+    retentionPolicy: "30d"
+    barmanObjectStore:
+      destinationPath: "s3://cnpg-backups/postgres-shared"
+      endpointURL: "http://minio-s3.minio.svc.cluster.local:9000"
+      s3Credentials:
+        accessKeyId:
+          name: postgres-shared-minio
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: postgres-shared-minio
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+        maxParallel: 4
+      data:
+        compression: gzip
+        jobs: 2
+
+  affinity:
+    podAntiAffinityType: preferred
+    topologyKey: kubernetes.io/hostname
+    tolerations: []
+    nodeSelector:
+      kubernetes.io/hostname: ubuntu
