@@ -1,24 +1,16 @@
 # NFS Subdir External Provisioner — StorageClass: nfs-cold
-# NFS server: sauvage (10.99.0.2 via WireGuard), path: /srv/nfs/k8s-cold
+# NFS server: sauvage (Tailscale node IP), path: /srv/nfs/k8s-cold
 # Helm chart: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
 # Deploy as a separate Helm release named: nfs-provisioner-cold
 nfs:
-  server: 10.99.0.2
+  server: 100.109.183.9
   path: /srv/nfs/k8s-cold
-  mountOptions:
-    - hard
-    - nfsvers=4.1
-    - rsize=1048576
-    - wsize=1048576
-    - timeo=900    # longer timeout over WireGuard (39ms RTT)
-    - retrans=3
 
 storageClass:
   name: nfs-cold
+  provisionerName: cluster.local/nfs-cold
   defaultClass: false
-  reclaimPolicy: Retain
   archiveOnDelete: true
-  pathPattern: "${.PVC.namespace}/${.PVC.name}"
 
 replicaCount: 1
 # Pin to x86 master only — dgx/sauvage nodes can't reach sauvage NFS server
