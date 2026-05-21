@@ -94,6 +94,5 @@ spec:
   affinity:
     podAntiAffinityType: preferred
     topologyKey: kubernetes.io/hostname
-    tolerations: []
     nodeSelector:
       kubernetes.io/hostname: ubuntu
