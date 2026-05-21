@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - networking/cert-manager/cluster-issuers.yaml
+  - networking/cert-manager/test-cert-staging.yaml
+  - networking/cert-manager/wildcard-prod.yaml
+  - networking/metallb/ippool.yaml
+  - networking/traefik-edge/namespace.yaml
+  - networking/traefik-edge/tls-store.yaml
+  - networking/traefik-edge/harbor-ingressroute.yaml
+  - networking/traefik-edge/wildcard-cert.yaml
+  - platform/authelia/manifest.yaml
+  - platform/kyverno/policies.yaml
+  - platform/vault/auto-unseal.yaml
+  - platform/velero/schedules.yaml
+  - storage/minio/backup-creds.yaml
