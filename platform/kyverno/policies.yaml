@@ -35,12 +35,14 @@ spec:
       validate:
         allowExistingViolations: true
         message: "Image tag ':latest' is not allowed. Use an explicit tag or digest."
-        deny:
-          conditions:
-            any:
-              - key: "{{ images.containers.*.tag[] | [?@ == 'latest'] | length(@) }}"
-                operator: GreaterThan
-                value: 0
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+            =(initContainers):
+              - image: "!*:latest"
+            =(ephemeralContainers):
+              - image: "!*:latest"
 ---
 # POLICY 2: Restrict images to Harbor (homelab/cache projects) + trusted sources
 # Audit mode until Harbor cache proxies are stable
