@@ -59,6 +59,18 @@ spec:
         passwordSecret:
           name: n8n-stg-db-credentials
         comment: "n8n staging workflow automation"
+      - name: litellm
+        ensure: present
+        login: true
+        passwordSecret:
+          name: litellm-db-credentials
+        comment: "LiteLLM router (repo: pocharlies/k8s-litellm-pocharlies)"
+      - name: teslamate
+        ensure: present
+        login: true
+        passwordSecret:
+          name: teslamate-db-credentials
+        comment: "TeslaMate (repo: pocharlies/k8s-teslamate-pocharlies)"
 
   backup:
     retentionPolicy: "30d"

@@ -4,7 +4,9 @@ namespace: databases
 resources:
   - namespace.yaml
   - minio-credentials.yaml
+  - app-credentials.yaml
   - cluster.yaml
+  - app-databases.yaml
   - scheduledbackup.yaml
 labels:
   - includeSelectors: false
