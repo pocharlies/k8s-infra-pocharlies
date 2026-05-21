@@ -1,18 +1,17 @@
-# ARC Runner Scale Set — amd64 (x86, CI builds + generic tasks)
+# ARC Runner Scale Set — amd64 (x86, CI builds)
 # Helm chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
 # Namespace: arc-runners
-# Auth: GitHub App (see arc-github-app-secret below)
 #
-# After cert: Create GitHub App at https://github.com/settings/apps
-#   Permissions: Actions (R/W), Metadata (R), Administration (R/W - for repo-level runners)
-#   Install on org/user, note App ID + Private Key
-#   kubectl create secret generic arc-github-app-secret -n arc-systems \
-#     --from-literal=github_app_id=<APP_ID> \
-#     --from-literal=github_app_installation_id=<INSTALL_ID> \
-#     --from-file=github_app_private_key=<path/to/private.pem>
+# NOTE: pocharlies is a personal GitHub account (not an org).
+# Runners must be registered per-repo. Add a scale set per repo as needed,
+# OR convert pocharlies to a GitHub Organization for org-level runners.
+#
+# Auth: PAT with repo+workflow scopes in secret arc-github-pat-secret (arc-runners namespace)
+#   kubectl create secret generic arc-github-pat-secret -n arc-runners \
+#     --from-literal=github_token=<PAT>
 
-githubConfigUrl: https://github.com/pocharlies
-githubConfigSecret: arc-github-app-secret
+githubConfigUrl: https://github.com/pocharlies/k8s-socialmedia-pocharlies
+githubConfigSecret: arc-github-pat-secret
 
 runnerScaleSetName: arc-amd64
 
@@ -23,19 +22,22 @@ template:
   spec:
     nodeSelector:
       kubernetes.io/arch: amd64
-      topology: lan
+      kubernetes.io/hostname: ubuntu
     tolerations: []
     containers:
       - name: runner
         image: ghcr.io/actions/actions-runner:latest
         command: ["/home/runner/run.sh"]
+        env:
+          # Allow runners to reach Harbor on LAN
+          - name: DOCKER_REGISTRY_MIRROR
+            value: harbor.lan.e-dani.com
         resources:
           requests:
             cpu: 500m
             memory: 512Mi
           limits:
             memory: 4Gi
-        # BuildKit sidecar socket for multi-arch builds
         volumeMounts:
           - name: work
             mountPath: /home/runner/_work
