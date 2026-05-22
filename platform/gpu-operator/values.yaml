@@ -32,10 +32,19 @@ gfd:
 operator:
   defaultRuntime: containerd
   cleanupCRD: false
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
 
 # Schedule only on labeled GPU nodes
 daemonsets:
-  tolerations: []
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   nodeSelector:
     nvidia.com/gpu: "true"
 
@@ -44,6 +53,35 @@ nfd:
   enabled: true   # GPU Operator includes NFD subchart
   nodefeaturerules:
     enabled: true
+  master:
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Equal
+        value: ""
+        effect: NoSchedule
+      - key: dedicated
+        operator: Equal
+        value: llm
+        effect: NoSchedule
+  gc:
+    tolerations:
+      - key: dedicated
+        operator: Equal
+        value: llm
+        effect: NoSchedule
+  worker:
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Equal
+        value: ""
+        effect: NoSchedule
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      - key: dedicated
+        operator: Equal
+        value: llm
+        effect: NoSchedule
 
 validator:
   driver:

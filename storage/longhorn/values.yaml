@@ -15,7 +15,7 @@ defaultSettings:
   replicaZoneSoftAntiAffinity: true
   # Backup target — will configure post-MinIO
   # backupTarget: s3://longhorn-backups@us-east-1/
-  taintToleration: ""
+  taintToleration: "dedicated=llm:NoSchedule"
 
 persistence:
   defaultClass: true
@@ -26,11 +26,20 @@ persistence:
 longhornManager:
   nodeSelector:
     topology: lan
-  tolerations: []
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
 
 longhornDriver:
   nodeSelector:
     topology: lan
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
 
 longhornUI:
   replicas: 1

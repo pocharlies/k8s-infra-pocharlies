@@ -2,6 +2,11 @@
 # Helm chart: kyverno/kyverno
 admissionController:
   replicas: 1
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   resources:
     requests:
       cpu: 100m
@@ -10,6 +15,11 @@ admissionController:
       memory: 512Mi
 
 backgroundController:
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   resources:
     requests:
       cpu: 50m
@@ -18,6 +28,11 @@ backgroundController:
       memory: 256Mi
 
 cleanupController:
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   resources:
     requests:
       cpu: 50m
@@ -26,6 +41,11 @@ cleanupController:
       memory: 128Mi
 
 reportsController:
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   resources:
     requests:
       cpu: 50m

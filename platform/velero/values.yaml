@@ -53,6 +53,11 @@ nodeAgent:
   privileged: true
   nodeSelector:
     topology: lan
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: llm
+      effect: NoSchedule
   resources:
     requests:
       cpu: 100m
