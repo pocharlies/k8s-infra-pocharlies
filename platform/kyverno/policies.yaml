@@ -175,3 +175,108 @@ spec:
             containers:
               - =(securityContext):
                   =(privileged): false
+---
+# POLICY 5: Label Kubernetes Services by infrastructure tier
+# Used by observability dashboards via kube-state-metrics' kube_service_labels.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: label-services-infra-tier
+  annotations:
+    policies.kyverno.io/title: Label Services By Infrastructure Tier
+    policies.kyverno.io/description: >
+      Adds infra=true to platform Services and infra=false to application
+      Services so dashboards can group cluster services consistently.
+spec:
+  admission: true
+  background: true
+  emitWarning: false
+  rules:
+    - name: label-infra-services
+      skipBackgroundRequests: false
+      match:
+        any:
+          - resources:
+              kinds: [Service]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: In
+                    values:
+                      - adguard
+                      - arc-runners
+                      - arc-systems
+                      - argocd
+                      - authelia
+                      - cert-manager
+                      - cnpg-system
+                      - databases
+                      - default
+                      - external-dns
+                      - external-secrets-operator
+                      - fleet-telemetry
+                      - gpu-operator
+                      - harbor
+                      - kube-node-lease
+                      - kube-public
+                      - kube-system
+                      - kyverno
+                      - local-path-storage
+                      - longhorn-system
+                      - metallb-system
+                      - minio
+                      - monitoring
+                      - nfs-provisioner
+                      - traefik-edge
+                      - traefik-lan
+                      - vault
+                      - velero
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            labels:
+              infra: "true"
+    - name: label-application-services
+      skipBackgroundRequests: false
+      match:
+        any:
+          - resources:
+              kinds: [Service]
+              namespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values:
+                      - adguard
+                      - arc-runners
+                      - arc-systems
+                      - argocd
+                      - authelia
+                      - cert-manager
+                      - cnpg-system
+                      - databases
+                      - default
+                      - external-dns
+                      - external-secrets-operator
+                      - fleet-telemetry
+                      - gpu-operator
+                      - harbor
+                      - kube-node-lease
+                      - kube-public
+                      - kube-system
+                      - kyverno
+                      - local-path-storage
+                      - longhorn-system
+                      - metallb-system
+                      - minio
+                      - monitoring
+                      - nfs-provisioner
+                      - traefik-edge
+                      - traefik-lan
+                      - vault
+                      - velero
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            labels:
+              infra: "false"
