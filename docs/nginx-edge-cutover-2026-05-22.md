@@ -101,3 +101,57 @@ Do not stop NGINX until these are resolved or explicitly accepted:
 6. Keep `/etc/nginx` and the backup directory for 30 days.
 
 Rollback is to restore Traefik Edge to `7080/7443` and start NGINX again.
+
+## Cutover Completed
+
+Completed on 2026-05-22:
+
+- NGINX on Sauvage was stopped and left installed/configured for rollback.
+- Traefik Edge Helm release was repaired from corrupt/superseded state and upgraded to a clean deployed release.
+- Traefik Edge now binds hostNetwork `:80` and `:443`.
+- Helm release after cutover: `traefik-edge` revision `10`, status `deployed`.
+- Traefik required `NET_BIND_SERVICE` plus `runAsUser: 0` to bind low ports on the Sauvage host network.
+- `images.openclaw.e-dani.com` is DNS-only and uses a dedicated cert-manager certificate `images-openclaw-tls`; Cloudflare proxied mode is not valid for this nested hostname with the standard Universal SSL certificate.
+
+Final backup path on Sauvage:
+
+`/home/ubuntu/backups/k8s-legacy-decom/20260522-nginx-traefik-cutover-final/`
+
+It contains tarballs for:
+
+- `/etc/nginx`
+- `/etc/letsencrypt`
+- `/var/lib/openclaw-images`
+
+Post-cutover validation highlights:
+
+- `brain.e-dani.com/health` -> `200`
+- `firecrawl.e-dani.com/` without token -> `401`
+- `n8n.e-dani.com/` -> `200`
+- `whatsapp.e-dani.com/` -> `302`
+- `images.openclaw.e-dani.com/ephemeral/<real>.png` -> `401`, certificate valid from Let's Encrypt
+- `openclaw.e-dani.com/health` -> `200`
+- `openclaw-webhooks.e-dani.com/health` -> `200`
+- `synapse.e-dani.com/` -> `200`
+- `skirmshop.e-dani.com/picker` -> `302`
+- `skirmshop.e-dani.com/labels-ups` -> `301`
+- `skirmshop.e-dani.com/collections-tree` -> `301`; `/collections-tree/` returns app-owned `410`
+- `harbor.e-dani.com/v2/` -> `401`
+
+Known preexisting issue:
+
+- `skirmshop.e-dani.com/` returns `502` both before and after the cutover because the legacy root backend is not healthy/listening. This is not a Traefik regression.
+
+Rollback:
+
+```bash
+helm upgrade traefik-edge traefik/traefik \
+  --namespace traefik-edge \
+  --version 40.2.0 \
+  -f /tmp/traefik-edge-values-rollback-7080-7443.yaml \
+  --wait --timeout 5m
+
+kubectl exec -n traefik-edge sauvage-hostctl -- chroot /host /bin/systemctl start nginx
+```
+
+If the temporary `sauvage-hostctl` pod is no longer present, recreate any privileged hostPath `/` pod on Sauvage or start NGINX through SSH with interactive sudo.
