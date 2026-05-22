@@ -18,6 +18,7 @@ with `runs-on`.
 |---|---|
 | `k8s-socialmedia-pocharlies` | `arc-amd64` |
 | `k8s-adguard-pocharlies` | `arc-adguard` |
+| `k8s-ai-pocharlies` | `arc-ai` |
 | `k8s-firecrawl-pocharlies` | `arc-firecrawl` |
 | `k8s-gitops-pocharlies` | `arc-gitops` |
 | `k8s-infra-pocharlies` | `arc-infra` |
@@ -29,6 +30,7 @@ with `runs-on`.
 | `k8s-shopify-label-pocharlies` | `arc-shopify-label` |
 | `k8s-shopify-picker-pocharlies` | `arc-shopify-picker` |
 | `k8s-shopify-sii-pocharlies` | `arc-shopify-sii` |
+| `k8s-shopify-translations-pocharlies` | `arc-shopify-translations` |
 | `k8s-teslamate-pocharlies` | `arc-teslamate` |
 
 ## Apply
