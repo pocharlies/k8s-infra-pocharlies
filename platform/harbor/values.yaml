@@ -49,6 +49,9 @@ internalTLS:
 
 trivy:
   enabled: true
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/arch: amd64
   resources:
     requests:
       cpu: 100m
@@ -82,10 +85,6 @@ jobservice:
   nodeSelector:
     kubernetes.io/arch: amd64
 registry:
-  replicas: 1
-  nodeSelector:
-    kubernetes.io/arch: amd64
-trivy:
   replicas: 1
   nodeSelector:
     kubernetes.io/arch: amd64
