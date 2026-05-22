@@ -9,6 +9,7 @@ resources:
   - networking/traefik-edge/namespace.yaml
   - networking/traefik-edge/tls-store.yaml
   - networking/traefik-edge/harbor-ingressroute.yaml
+  - networking/traefik-edge/legacy-public-routes.yaml
   - networking/traefik-edge/wildcard-cert.yaml
   - platform/authelia/manifest.yaml
   - platform/kyverno/policies.yaml

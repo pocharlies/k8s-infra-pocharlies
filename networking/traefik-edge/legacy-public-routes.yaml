@@ -1,0 +1,391 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sauvage-localhost
+  namespace: traefik-edge
+  labels:
+    app.kubernetes.io/name: sauvage-localhost
+    app.kubernetes.io/part-of: traefik-edge-cutover
+spec:
+  type: ExternalName
+  externalName: localhost
+  ports:
+    - { name: p3000, port: 3000, protocol: TCP }
+    - { name: p3050, port: 3050, protocol: TCP }
+    - { name: p3100, port: 3100, protocol: TCP }
+    - { name: p3456, port: 3456, protocol: TCP }
+    - { name: p3459, port: 3459, protocol: TCP }
+    - { name: p3461, port: 3461, protocol: TCP }
+    - { name: p3462, port: 3462, protocol: TCP }
+    - { name: p3470, port: 3470, protocol: TCP }
+    - { name: p3473, port: 3473, protocol: TCP }
+    - { name: p5001, port: 5001, protocol: TCP }
+    - { name: p5002, port: 5002, protocol: TCP }
+    - { name: p6333, port: 6333, protocol: TCP }
+    - { name: p8002, port: 8002, protocol: TCP }
+    - { name: p8080, port: 8080, protocol: TCP }
+    - { name: p8787, port: 8787, protocol: TCP }
+    - { name: p8788, port: 8788, protocol: TCP }
+    - { name: p8789, port: 8789, protocol: TCP }
+    - { name: p8790, port: 8790, protocol: TCP }
+    - { name: p8791, port: 8791, protocol: TCP }
+    - { name: p18789, port: 18789, protocol: TCP }
+    - { name: p18790, port: 18790, protocol: TCP }
+    - { name: p18795, port: 18795, protocol: TCP }
+    - { name: p18890, port: 18890, protocol: TCP }
+    - { name: p18933, port: 18933, protocol: TCP }
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-labels-cex
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /labels-cex
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-chatbot
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /chatbot
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-product-ai
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /product-ai
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-back-in-stock
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /apps/back-in-stock
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: replace-gmail-pubsub
+  namespace: traefik-edge
+spec:
+  replacePath:
+    path: /gmail-pubsub
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: synapse-admin-allowlist
+  namespace: traefik-edge
+spec:
+  ipAllowList:
+    sourceRange:
+      - 10.8.0.0/24
+      - 100.64.0.0/10
+      - 192.168.50.0/24
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-bundles-root
+  namespace: traefik-edge
+spec:
+  redirectRegex:
+    regex: ^https?://bundles\.e-dani\.com/?(.*)
+    replacement: https://bundles.e-dani.com/bundles/${1}
+    permanent: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-sii-root
+  namespace: traefik-edge
+spec:
+  redirectRegex:
+    regex: ^https?://sii\.e-dani\.com/?(.*)
+    replacement: https://sii.e-dani.com/sii/${1}
+    permanent: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-standalone-k8s-routes
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`bundles.e-dani.com`) && PathPrefix(`/bundles`)
+      services:
+        - name: bundles-app
+          namespace: skirmshop
+          port: 80
+    - kind: Rule
+      match: Host(`bundles.e-dani.com`)
+      middlewares:
+        - name: redirect-bundles-root
+      services:
+        - name: bundles-app
+          namespace: skirmshop
+          port: 80
+    - kind: Rule
+      match: Host(`sii.e-dani.com`) && PathPrefix(`/sii`)
+      services:
+        - name: sii-app
+          namespace: skirmshop
+          port: 80
+    - kind: Rule
+      match: Host(`sii.e-dani.com`)
+      middlewares:
+        - name: redirect-sii-root
+      services:
+        - name: sii-app
+          namespace: skirmshop
+          port: 80
+    - kind: Rule
+      match: Host(`brain.e-dani.com`) && Path(`/health`)
+      services:
+        - name: skirmshop-brain
+          namespace: skirmshop-brain-prod
+          port: 80
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-skirmshop-legacy-compat
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/labels-cex`)
+      middlewares:
+        - name: strip-labels-cex
+      services:
+        - name: labels-correos-express-adapter
+          namespace: skirmshop
+          port: 3003
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/chatbot`)
+      middlewares:
+        - name: strip-chatbot
+      services:
+        - name: sauvage-localhost
+          port: 3100
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/sn`)
+      services:
+        - name: sauvage-localhost
+          port: 3461
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/collections-tree`)
+      services:
+        - name: sauvage-localhost
+          port: 3473
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/product-ai`)
+      middlewares:
+        - name: strip-product-ai
+      services:
+        - name: sauvage-localhost
+          port: 3459
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 3456
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-affiliate-legacy
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`affiliate.skirmshop.es`) || Host(`go.skirmshop.es`)
+      services:
+        - name: sauvage-localhost
+          port: 3462
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-sauvage-legacy
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`sauvage.e-dani.com`) && PathPrefix(`/apps/back-in-stock`)
+      middlewares:
+        - name: strip-back-in-stock
+      services:
+        - name: sauvage-localhost
+          port: 3470
+    - kind: Rule
+      match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || Path(`/healthz`) || Path(`/readyz`))
+      services:
+        - name: sauvage-localhost
+          port: 3470
+    - kind: Rule
+      match: Host(`sauvage.e-dani.com`)
+      services:
+        - name: whatsapp-connector
+          namespace: whatsapp-mcp
+          port: 3001
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-openclaw-webhooks
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`) && PathPrefix(`/gmail-pubsub-pocharlies`)
+      middlewares:
+        - name: replace-gmail-pubsub
+      services:
+        - name: sauvage-localhost
+          port: 8789
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`) && PathPrefix(`/gmail-pubsub-leila`)
+      middlewares:
+        - name: replace-gmail-pubsub
+      services:
+        - name: sauvage-localhost
+          port: 8790
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`) && PathPrefix(`/gmail-pubsub-edani`)
+      middlewares:
+        - name: replace-gmail-pubsub
+      services:
+        - name: sauvage-localhost
+          port: 8791
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`) && PathPrefix(`/gmail-pubsub`)
+      services:
+        - name: sauvage-localhost
+          port: 8788
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`) && Path(`/telegram-webhook`)
+      services:
+        - name: sauvage-localhost
+          port: 8787
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-synapse-legacy
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`synapse.e-dani.com`) && PathPrefix(`/webhooks`)
+      services:
+        - name: sauvage-localhost
+          port: 18790
+    - kind: Rule
+      match: Host(`synapse.e-dani.com`)
+      middlewares:
+        - name: synapse-admin-allowlist
+      services:
+        - name: sauvage-localhost
+          port: 18795
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-other-legacy-proxies
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`skirmbooks.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 3050
+    - kind: Rule
+      match: Host(`sauvageplay.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 3000
+    - kind: Rule
+      match: Host(`sauva.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 8080
+    - kind: Rule
+      match: Host(`qdrant.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 6333
+    - kind: Rule
+      match: Host(`rag.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 8002
+    - kind: Rule
+      match: Host(`webui.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 3000
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge

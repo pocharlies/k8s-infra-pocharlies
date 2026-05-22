@@ -64,6 +64,9 @@ ingressRoute:
 additionalArguments:
   - "--providers.kubernetesingress=false"
   - "--providers.kubernetescrd=true"
+  - "--providers.kubernetescrd.ingressClass=traefik-edge"
+  - "--providers.kubernetescrd.allowCrossNamespace=true"
+  - "--providers.kubernetescrd.allowExternalNameServices=true"
   - "--providers.kubernetesingress.ingressclass=traefik-edge"
   - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
   - "--entrypoints.web.http.redirections.entrypoint.scheme=https"

@@ -11,6 +11,7 @@ metadata:
 spec:
   entryPoints:
     - websecure
+  ingressClassName: traefik-edge
   routes:
     - kind: Rule
       match: Host(`harbor.e-dani.com`)
