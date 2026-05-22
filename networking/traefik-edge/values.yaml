@@ -4,11 +4,11 @@
 # TLS termination via cert-manager wildcard *.e-dani.com (DNS-01 Cloudflare).
 # Traffic flow: Internet → sauvage:443 → Traefik EDGE → cluster services (via flannel-WG overlay)
 #
-# IMPORTANT: Before enabling, ensure NGINX legacy on sauvage releases ports 80/443.
 # Cutover completed 2026-05-22: NGINX stopped, Traefik binds 80/443.
 
 deployment:
   kind: DaemonSet
+  dnsPolicy: ClusterFirstWithHostNet
 
 # Pin to sauvage nodes only
 nodeSelector:
@@ -23,7 +23,6 @@ tolerations:
 
 # hostNetwork: bind directly to sauvage IP 57.129.17.172
 hostNetwork: true
-dnsPolicy: ClusterFirstWithHostNet
 
 # Use separate IngressClass from LAN Traefik
 ingressClass:
@@ -91,11 +90,27 @@ additionalArguments:
 providers:
   kubernetesCRD:
     ingressClass: traefik-edge
+    namespaces:
+      - traefik-edge
+      - skirmshop
+      - whatsapp-mcp
+      - litellm
+      - n8n
+      - harbor
+      - skirmshop-brain-prod
     allowCrossNamespace: true
     allowExternalNameServices: true
     allowEmptyServices: true
   kubernetesIngress:
     ingressClass: traefik-edge
+    namespaces:
+      - traefik-edge
+      - skirmshop
+      - whatsapp-mcp
+      - litellm
+      - n8n
+      - harbor
+      - skirmshop-brain-prod
     allowExternalNameServices: true
     allowEmptyServices: true
 
