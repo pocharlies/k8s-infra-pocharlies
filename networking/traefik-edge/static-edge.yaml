@@ -280,7 +280,7 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: images.openclaw.e-dani.com
     external-dns.alpha.kubernetes.io/target: "sauvage.e-dani.com"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   entryPoints:
     - websecure
@@ -294,6 +294,4 @@ spec:
         - name: edge-static-server
           port: 8080
   tls:
-    store:
-      name: default
-      namespace: traefik-edge
+    secretName: images-openclaw-tls

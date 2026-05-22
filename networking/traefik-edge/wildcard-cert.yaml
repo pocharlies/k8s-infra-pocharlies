@@ -18,3 +18,20 @@ spec:
     - "e-dani.com"
   # Renew 30 days before expiry
   renewBefore: 720h
+---
+# Dedicated certificate for the nested OpenClaw images host.
+# Cloudflare Universal SSL only covers one wildcard level; this host is
+# images.openclaw.e-dani.com, so it is served DNS-only by Traefik Edge.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: images-openclaw-tls
+  namespace: traefik-edge
+spec:
+  secretName: images-openclaw-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "images.openclaw.e-dani.com"
+  renewBefore: 720h

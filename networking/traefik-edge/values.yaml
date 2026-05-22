@@ -5,7 +5,7 @@
 # Traffic flow: Internet → sauvage:443 → Traefik EDGE → cluster services (via flannel-WG overlay)
 #
 # IMPORTANT: Before enabling, ensure NGINX legacy on sauvage releases ports 80/443.
-# Strategy: run Traefik EDGE on 8080/8443 with NGINX as proxy, then cutover.
+# Cutover completed 2026-05-22: NGINX stopped, Traefik binds 80/443.
 
 deployment:
   kind: DaemonSet
@@ -36,13 +36,32 @@ ports:
   web:
     port: 80
     exposedPort: 80
-    redirectTo:
-      port: websecure
+    protocol: TCP
+    expose:
+      default: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     port: 443
     exposedPort: 443
-    tls:
-      enabled: true
+    protocol: TCP
+    expose:
+      default: true
+    http:
+      tls:
+        enabled: true
+  traefik:
+    port: 9080
+    expose:
+      default: false
+  metrics:
+    port: 9901
+    expose:
+      default: false
   # Tesla Fleet Telemetry — TCP passthrough on 4444
   # Tesla backend servers connect here to push vehicle telemetry.
   # IngressRouteTCP in fleet-telemetry namespace handles routing.
@@ -62,18 +81,23 @@ ingressRoute:
 
 # Plugins / middleware
 additionalArguments:
-  - "--providers.kubernetesingress=false"
-  - "--providers.kubernetescrd=true"
-  - "--providers.kubernetescrd.ingressClass=traefik-edge"
-  - "--providers.kubernetescrd.allowCrossNamespace=true"
-  - "--providers.kubernetescrd.allowExternalNameServices=true"
-  - "--providers.kubernetesingress.ingressclass=traefik-edge"
-  - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-  - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-  - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
   - "--log.level=INFO"
   - "--accesslog=true"
   - "--metrics.prometheus=true"
+  - "--metrics.prometheus.entrypoint=metrics"
+  - "--ping=true"
+  - "--ping.entryPoint=traefik"
+
+providers:
+  kubernetesCRD:
+    ingressClass: traefik-edge
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+    allowEmptyServices: true
+  kubernetesIngress:
+    ingressClass: traefik-edge
+    allowExternalNameServices: true
+    allowEmptyServices: true
 
 resources:
   requests:
@@ -81,6 +105,22 @@ resources:
     memory: 128Mi
   limits:
     memory: 512Mi
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  runAsNonRoot: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+    add: ["NET_BIND_SERVICE"]
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 0
 
 # RBAC: needs ClusterRole to watch IngressRoutes across all namespaces
 rbac:
