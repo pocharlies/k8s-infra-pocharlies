@@ -87,6 +87,16 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
+  name: strip-mcp
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /mcp
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
   name: synapse-admin-allowlist
   namespace: traefik-edge
 spec:
@@ -377,6 +387,13 @@ spec:
           port: 6333
     - kind: Rule
       match: Host(`rag.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 5001
+    - kind: Rule
+      match: Host(`rag.e-dani.com`) && PathPrefix(`/mcp`)
+      middlewares:
+        - name: strip-mcp
       services:
         - name: sauvage-localhost
           port: 8002
