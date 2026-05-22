@@ -53,6 +53,7 @@ Checked from Sauvage against `https://127.0.0.1:7443` with Host headers:
 - `openclaw.e-dani.com /gmail-pubsub` -> `405` on GET, expected for a push endpoint.
 - `synapse.e-dani.com /webhooks/health` -> `404`, backend reachable but route does not expose a health endpoint.
 - `skirmbooks.e-dani.com /` -> `302`
+- `rag.e-dani.com /` -> `200`
 
 ## Cutover Blockers
 
@@ -73,7 +74,6 @@ Do not stop NGINX until these are resolved or explicitly accepted:
   - `skirmshop.e-dani.com/`
   - `sauvage.e-dani.com/healthz`
   - `qdrant.e-dani.com`
-  - `rag.e-dani.com`
   - `webui.e-dani.com`
 
 ## Final Cutover Procedure
