@@ -287,8 +287,9 @@ spec:
     - kind: Rule
       match: Host(`affiliate.skirmshop.es`) || Host(`go.skirmshop.es`)
       services:
-        - name: sauvage-localhost
-          port: 3462
+        - name: affiliate-app
+          namespace: skirmshop
+          port: 80
   tls:
     store:
       name: default
