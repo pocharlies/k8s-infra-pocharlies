@@ -1,0 +1,240 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-static-server
+  namespace: traefik-edge
+  labels:
+    app.kubernetes.io/name: edge-static-server
+    app.kubernetes.io/part-of: traefik-edge-cutover
+data:
+  server.py: |
+    import mimetypes
+    import os
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from pathlib import Path
+    from urllib.parse import unquote, urlparse
+
+    HOST_ROOTS = {
+        "cv.e-dani.com": ("/srv/cv-dani", True),
+        "cv-manu.e-dani.com": ("/srv/cv-manu", True),
+    }
+
+    PREFIX_ROOTS = {
+        ("skirmshop.e-dani.com", "/files/"): ("/srv/skirmshop-files", False),
+        ("synapse.e-dani.com", "/attachments/"): ("/srv/synapse-email-attachments", False),
+    }
+
+    def safe_join(root, rel):
+        root_path = Path(root).resolve()
+        candidate = (root_path / rel.lstrip("/")).resolve()
+        if not str(candidate).startswith(str(root_path)):
+            return None
+        return candidate
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_HEAD(self):
+            self._serve(head_only=True)
+
+        def do_GET(self):
+            self._serve(head_only=False)
+
+        def _serve(self, head_only=False):
+            host = self.headers.get("Host", "").split(":")[0]
+            path = unquote(urlparse(self.path).path)
+
+            root = None
+            spa = False
+            rel = path
+            for (prefix_host, prefix), mapping in PREFIX_ROOTS.items():
+                if host == prefix_host and path.startswith(prefix):
+                    root, spa = mapping
+                    rel = path[len(prefix):]
+                    break
+
+            if root is None and host in HOST_ROOTS:
+                root, spa = HOST_ROOTS[host]
+
+            if root is None:
+                self.send_error(404)
+                return
+
+            target = safe_join(root, rel)
+            if target is None:
+                self.send_error(403)
+                return
+
+            if target.is_dir():
+                target = target / "index.html"
+
+            if not target.exists() and spa:
+                target = Path(root) / "index.html"
+
+            if not target.exists() or not target.is_file():
+                self.send_error(404)
+                return
+
+            content_type = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(target.stat().st_size))
+            if target.suffix in {".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".woff", ".woff2", ".pdf"}:
+                self.send_header("Cache-Control", "public, max-age=2592000")
+            else:
+                self.send_header("Cache-Control", "public, max-age=300")
+            self.end_headers()
+
+            if not head_only:
+                with target.open("rb") as fh:
+                    self.wfile.write(fh.read())
+
+        def log_message(self, fmt, *args):
+            return
+
+    ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-static-server
+  namespace: traefik-edge
+  labels:
+    app.kubernetes.io/name: edge-static-server
+    app.kubernetes.io/part-of: traefik-edge-cutover
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edge-static-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: edge-static-server
+        app.kubernetes.io/part-of: traefik-edge-cutover
+    spec:
+      nodeSelector:
+        role: edge
+        topology: remote
+      tolerations:
+        - key: role
+          operator: Equal
+          value: edge
+          effect: NoSchedule
+      containers:
+        - name: static
+          image: docker.io/library/python:3.12-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/server.py"]
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /, port: 8080, httpHeaders: [{ name: Host, value: cv.e-dani.com }] }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 8080, httpHeaders: [{ name: Host, value: cv.e-dani.com }] }
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: app, mountPath: /app, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
+            - { name: cv-dani, mountPath: /srv/cv-dani, readOnly: true }
+            - { name: cv-manu, mountPath: /srv/cv-manu, readOnly: true }
+            - { name: skirmshop-files, mountPath: /srv/skirmshop-files, readOnly: true }
+            - { name: synapse-email-attachments, mountPath: /srv/synapse-email-attachments, readOnly: true }
+      volumes:
+        - name: app
+          configMap:
+            name: edge-static-server
+        - name: tmp
+          emptyDir: {}
+        - name: cv-dani
+          hostPath: { path: /home/ubuntu/cv/dani, type: Directory }
+        - name: cv-manu
+          hostPath: { path: /home/ubuntu/cv/manu, type: Directory }
+        - name: skirmshop-files
+          hostPath: { path: /var/www/skirmshop-files, type: Directory }
+        - name: synapse-email-attachments
+          hostPath: { path: /var/lib/synapse/email-attachments, type: DirectoryOrCreate }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edge-static-server
+  namespace: traefik-edge
+  labels:
+    app.kubernetes.io/name: edge-static-server
+    app.kubernetes.io/part-of: traefik-edge-cutover
+spec:
+  selector:
+    app.kubernetes.io/name: edge-static-server
+  ports:
+    - { name: http, port: 8080, targetPort: 8080 }
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-api-oracle
+  namespace: traefik-edge
+spec:
+  stripPrefix:
+    prefixes:
+      - /api/oracle
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-static-public
+  namespace: traefik-edge
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`cv.e-dani.com`) && PathPrefix(`/api/oracle`)
+      priority: 2000
+      middlewares:
+        - name: strip-api-oracle
+      services:
+        - name: sauvage-localhost
+          port: 18933
+    - kind: Rule
+      match: Host(`cv.e-dani.com`)
+      priority: 1000
+      services:
+        - name: edge-static-server
+          port: 8080
+    - kind: Rule
+      match: Host(`cv-manu.e-dani.com`)
+      services:
+        - name: edge-static-server
+          port: 8080
+    - kind: Rule
+      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/files`)
+      priority: 2000
+      services:
+        - name: edge-static-server
+          port: 8080
+    - kind: Rule
+      match: Host(`synapse.e-dani.com`) && PathPrefix(`/attachments`)
+      priority: 2000
+      middlewares:
+        - name: synapse-admin-allowlist
+      services:
+        - name: edge-static-server
+          port: 8080
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge

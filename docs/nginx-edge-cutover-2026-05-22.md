@@ -54,19 +54,18 @@ Checked from Sauvage against `https://127.0.0.1:7443` with Host headers:
 - `synapse.e-dani.com /webhooks/health` -> `404`, backend reachable but route does not expose a health endpoint.
 - `skirmbooks.e-dani.com /` -> `302`
 - `rag.e-dani.com /` -> `200`
+- `cv.e-dani.com /` -> `200`
+- `cv-manu.e-dani.com /` -> `200`
+- `skirmshop.e-dani.com /files/productos_venta_sin_stock_CATEGORIZADO.xlsx` -> `200`
 
 ## Cutover Blockers
 
 Do not stop NGINX until these are resolved or explicitly accepted:
 
 - `firecrawl.e-dani.com`: resolved with `firecrawl-edge-auth`, a Traefik ForwardAuth shim that preserves the old Bearer check. The live Secret is intentionally not stored in Git and should be moved to Vault/ExternalSecret.
-- `openclaw.e-dani.com /` and `/openclaw-mem/`: NGINX injects a root-only Authorization snippet that is not readable from this session.
-- static file routes need a non-NGINX static service or object storage migration:
-  - `skirmshop.e-dani.com/files/`
-  - `cv.e-dani.com`
-  - `cv-manu.e-dani.com`
-  - `images.openclaw.e-dani.com`
-  - `synapse.e-dani.com/attachments/`
+- `openclaw.e-dani.com /openclaw-mem/`: backend port `5002` is not currently listening. Root `/` is routed to `18789`.
+- `images.openclaw.e-dani.com`: still needs a Traefik BasicAuth equivalent from the root-only htpasswd file before NGINX is removed.
+- `synapse.e-dani.com/attachments/`: routed to `edge-static-server` with the same LAN/VPN/Tailscale allowlist.
 - some NGINX routes point to legacy ports that are not currently listening, so Traefik correctly returns `502`:
   - `skirmshop.e-dani.com/sn`
   - `skirmshop.e-dani.com/collections-tree`

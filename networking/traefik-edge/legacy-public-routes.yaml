@@ -323,6 +323,11 @@ spec:
       services:
         - name: sauvage-localhost
           port: 8787
+    - kind: Rule
+      match: Host(`openclaw.e-dani.com`)
+      services:
+        - name: sauvage-localhost
+          port: 18789
   tls:
     store:
       name: default
