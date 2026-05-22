@@ -27,6 +27,7 @@ ports:
 endpoints:
   - addresses:
       - 100.109.183.9
+    conditions: {}
 ---
 apiVersion: v1
 kind: Service
