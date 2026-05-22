@@ -9,15 +9,8 @@ NAMESPACE="arc-runners"
 kubectl get namespace "$NAMESPACE" >/dev/null
 kubectl get secret arc-github-pat-secret -n "$NAMESPACE" >/dev/null
 
-helm upgrade --install arc-runners-amd64 "$CHART" \
+# Single shared org-scope runner for all of pocharlies-org.
+helm upgrade --install arc-k8s "$CHART" \
   --version "$VERSION" \
   --namespace "$NAMESPACE" \
-  -f "$ROOT/platform/arc/scale-set-amd64.yaml"
-
-for values in "$ROOT"/platform/arc/scale-sets/*.yaml; do
-  name="$(basename "$values" .yaml)"
-  helm upgrade --install "arc-runners-${name}" "$CHART" \
-    --version "$VERSION" \
-    --namespace "$NAMESPACE" \
-    -f "$values"
-done
+  -f "$ROOT/platform/arc/scale-set-k8s.yaml"

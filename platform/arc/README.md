@@ -6,42 +6,29 @@ standard.
 ## Namespaces
 
 - `arc-systems`: controller (`arc-gha-rs-controller`)
-- `arc-runners`: per-repository runner scale sets
+- `arc-runners`: the shared runner scale set
 
-`pocharlies` is a personal GitHub account, so runners are registered per repo
-instead of at organization scope. Workflows target the scale-set name directly
-with `runs-on`.
+## Runner
 
-## Scale sets
+All repositories live under the `pocharlies-org` organization and share a
+single org-scope runner. Workflows target it with `runner: arc-k8s` (the input
+to the reusable workflows in `pocharlies-org/k8s-gitops-pocharlies`):
 
-| Repository | runs-on |
-|---|---|
-| `k8s-socialmedia-pocharlies` | `arc-amd64` |
-| `k8s-adguard-pocharlies` | `arc-adguard` |
-| `k8s-ai-pocharlies` | `arc-ai` |
-| `k8s-firecrawl-pocharlies` | `arc-firecrawl` |
-| `k8s-gitops-pocharlies` | `arc-gitops` |
-| `k8s-infra-pocharlies` | `arc-infra` |
-| `k8s-libreplay-pocharlies` | `arc-libreplay` |
-| `k8s-litellm-pocharlies` | `arc-litellm` |
-| `k8s-n8n-pocharlies` | `arc-n8n` |
-| `k8s-observability-pocharlies` | `arc-observability` |
-| `k8s-shopify-bundles-pocharlies` | `arc-shopify-bundles` |
-| `k8s-shopify-label-pocharlies` | `arc-shopify-label` |
-| `k8s-shopify-picker-pocharlies` | `arc-shopify-picker` |
-| `k8s-shopify-sii-pocharlies` | `arc-shopify-sii` |
-| `k8s-shopify-translations-pocharlies` | `arc-shopify-translations` |
-| `k8s-teslamate-pocharlies` | `arc-teslamate` |
+| Scale set | runs-on | Scope |
+|---|---|---|
+| `arc-k8s` | `arc-k8s` | `github.com/pocharlies-org` (whole org) |
+
+Org-scope runners are only available to repositories inside `pocharlies-org`.
 
 ## Apply
 
 The `arc-github-pat-secret` secret must exist in `arc-runners` and contain
-`github_token`.
+`github_token` (a PAT with org repo + workflow scope).
 
 ```bash
 platform/arc/install-scale-sets.sh
 ```
 
-All scale sets use `containerMode.type: dind` so Docker build and push jobs work
+`arc-k8s` uses `containerMode.type: dind` so Docker build and push jobs work
 from Kubernetes runners. DinD is privileged; keep these runners isolated in
 `arc-runners`.
