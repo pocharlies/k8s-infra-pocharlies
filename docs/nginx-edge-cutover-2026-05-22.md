@@ -79,7 +79,7 @@ Do not stop NGINX until these are resolved or explicitly accepted:
 
 - `firecrawl.e-dani.com`: resolved with `firecrawl-edge-auth`, a Traefik ForwardAuth shim that preserves the old Bearer check. The live Secret is intentionally not stored in Git and should be moved to Vault/ExternalSecret.
 - `openclaw.e-dani.com /openclaw-mem/`: backend port `5002` is not currently listening. Root `/` is routed to `18789`.
-- `images.openclaw.e-dani.com`: no known owner/consumer. It is intentionally not migrated until a real use is found.
+- `images.openclaw.e-dani.com`: OpenClaw generated-image static store. NGINX serves `/var/lib/openclaw-images` with BasicAuth realm `openclaw-images`; allowed paths are `/ephemeral/<32hex>.(png|jpg|jpeg|webp)` and `/permanent/<32hex>.(png|jpg|jpeg|webp)`. This must be migrated before NGINX shutdown, preserving the hostPath and `/etc/nginx/htpasswd-openclaw-images` auth.
 - `obsidian.e-dani.com`: deprecated. It is intentionally not migrated.
 - `synapse.e-dani.com/attachments/`: routed to `edge-static-server` with the same LAN/VPN/Tailscale allowlist.
 - some NGINX routes point to legacy ports that are not currently listening, so Traefik correctly returns `502`:
