@@ -10,6 +10,7 @@ data:
   server.py: |
     import mimetypes
     import os
+    import re
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from pathlib import Path
     from urllib.parse import unquote, urlparse
@@ -23,6 +24,10 @@ data:
         ("skirmshop.e-dani.com", "/files/"): ("/srv/skirmshop-files", False),
         ("synapse.e-dani.com", "/attachments/"): ("/srv/synapse-email-attachments", False),
     }
+
+    OPENCLAW_IMAGES_HOST = "images.openclaw.e-dani.com"
+    OPENCLAW_IMAGES_ROOT = "/srv/openclaw-images"
+    OPENCLAW_IMAGE_PATH = re.compile(r"^/(ephemeral|permanent)/[0-9a-f]{32}\.(png|jpe?g|webp)$")
 
     def safe_join(root, rel):
         root_path = Path(root).resolve()
@@ -45,8 +50,18 @@ data:
             root = None
             spa = False
             rel = path
+            is_openclaw_image = False
+
+            if host == OPENCLAW_IMAGES_HOST:
+                if not OPENCLAW_IMAGE_PATH.match(path):
+                    self.send_error(404)
+                    return
+                root = OPENCLAW_IMAGES_ROOT
+                rel = path
+                is_openclaw_image = True
+
             for (prefix_host, prefix), mapping in PREFIX_ROOTS.items():
-                if host == prefix_host and path.startswith(prefix):
+                if root is None and host == prefix_host and path.startswith(prefix):
                     root, spa = mapping
                     rel = path[len(prefix):]
                     break
@@ -77,7 +92,10 @@ data:
             self.send_response(200)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(target.stat().st_size))
-            if target.suffix in {".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".woff", ".woff2", ".pdf"}:
+            if is_openclaw_image:
+                self.send_header("Cache-Control", "private, max-age=86400")
+                self.send_header("Content-Disposition", "inline")
+            elif target.suffix in {".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".woff", ".woff2", ".pdf"}:
                 self.send_header("Cache-Control", "public, max-age=2592000")
             else:
                 self.send_header("Cache-Control", "public, max-age=300")
@@ -152,6 +170,7 @@ spec:
             - { name: cv-manu, mountPath: /srv/cv-manu, readOnly: true }
             - { name: skirmshop-files, mountPath: /srv/skirmshop-files, readOnly: true }
             - { name: synapse-email-attachments, mountPath: /srv/synapse-email-attachments, readOnly: true }
+            - { name: openclaw-images, mountPath: /srv/openclaw-images, readOnly: true }
       volumes:
         - name: app
           configMap:
@@ -166,6 +185,8 @@ spec:
           hostPath: { path: /var/www/skirmshop-files, type: Directory }
         - name: synapse-email-attachments
           hostPath: { path: /var/lib/synapse/email-attachments, type: DirectoryOrCreate }
+        - name: openclaw-images
+          hostPath: { path: /var/lib/openclaw-images, type: Directory }
 ---
 apiVersion: v1
 kind: Service
@@ -180,6 +201,15 @@ spec:
     app.kubernetes.io/name: edge-static-server
   ports:
     - { name: http, port: 8080, targetPort: 8080 }
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: openclaw-images-auth
+  namespace: traefik-edge
+spec:
+  basicAuth:
+    secret: openclaw-images-basic-auth
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -231,6 +261,32 @@ spec:
       priority: 2000
       middlewares:
         - name: synapse-admin-allowlist
+      services:
+        - name: edge-static-server
+          port: 8080
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: edge-openclaw-images
+  namespace: traefik-edge
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: images.openclaw.e-dani.com
+    external-dns.alpha.kubernetes.io/target: "sauvage.e-dani.com"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`images.openclaw.e-dani.com`)
+      middlewares:
+        - name: openclaw-images-auth
       services:
         - name: edge-static-server
           port: 8080
