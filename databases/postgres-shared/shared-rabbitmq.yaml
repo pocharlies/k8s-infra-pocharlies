@@ -1,0 +1,113 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: rabbitmq-secrets
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: shared-rabbitmq
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: rabbitmq-secrets
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: RABBITMQ_DEFAULT_USER
+      remoteRef:
+        key: secret/skirmshop/rabbitmq
+        property: user
+    - secretKey: RABBITMQ_DEFAULT_PASS
+      remoteRef:
+        key: secret/skirmshop/rabbitmq
+        property: password
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-rabbitmq-data
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: shared-rabbitmq
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: longhorn
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shared-rabbitmq
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: shared-rabbitmq
+spec:
+  serviceName: shared-rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shared-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: shared-rabbitmq
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        topology: lan
+        kubernetes.io/arch: amd64
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: mgmt
+              containerPort: 15672
+          envFrom:
+            - secretRef:
+                name: rabbitmq-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: [rabbitmq-diagnostics, check_port_connectivity]
+            initialDelaySeconds: 20
+            periodSeconds: 15
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: shared-rabbitmq-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shared-rabbitmq
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: shared-rabbitmq
+spec:
+  selector:
+    app: shared-rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: mgmt
+      port: 15672
+      targetPort: 15672

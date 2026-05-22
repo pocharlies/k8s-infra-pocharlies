@@ -71,6 +71,18 @@ spec:
         passwordSecret:
           name: teslamate-db-credentials
         comment: "TeslaMate (repo: pocharlies/k8s-teslamate-pocharlies)"
+      - name: whatsappmcp
+        ensure: present
+        login: true
+        passwordSecret:
+          name: whatsappmcp-db-credentials
+        comment: "WhatsApp MCP/socialmedia (repo: pocharlies/k8s-socialmedia-pocharlies)"
+      - name: skirmshop
+        ensure: present
+        login: true
+        passwordSecret:
+          name: skirmshop-db-credentials
+        comment: "SkirmShop shared apps and labels (shopify-* repos)"
 
   backup:
     retentionPolicy: "30d"

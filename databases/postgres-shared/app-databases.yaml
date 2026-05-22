@@ -25,3 +25,185 @@ spec:
   owner: teslamate
   cluster:
     name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: whatsappmcp
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: whatsappmcp
+  owner: whatsappmcp
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: labels
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: labels
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: skirmshop
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: skirmshop
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: bundles
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: bundles
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: sii
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: sii
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: firecrawl
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: firecrawl
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: collections-tree
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: collections_tree
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: affiliate
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: affiliate
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: translations
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: translations
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: back-in-stock
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: back_in_stock
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: product-ai
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: product_ai
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: pocharlies
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: pocharlies
+  owner: skirmshop
+  cluster:
+    name: postgres-shared
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: skirmbooks
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: postgres-database
+spec:
+  name: skirmbooks
+  owner: skirmshop
+  cluster:
+    name: postgres-shared

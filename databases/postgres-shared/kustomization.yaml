@@ -7,6 +7,7 @@ resources:
   - app-credentials.yaml
   - cluster.yaml
   - app-databases.yaml
+  - shared-rabbitmq.yaml
   - scheduledbackup.yaml
 labels:
   - includeSelectors: false
