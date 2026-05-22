@@ -21,7 +21,7 @@ Known backup limitation: the SSH user cannot read these root-only files without 
 
 `networking/traefik-edge/legacy-public-routes.yaml` adds:
 
-- standalone k8s public routes for `bundles.e-dani.com`, `sii.e-dani.com`, and `brain.e-dani.com/health`.
+- standalone k8s public routes for `bundles.e-dani.com`, `sii.e-dani.com`, and `brain.e-dani.com`.
 - k8s route for `skirmshop.e-dani.com/labels-cex` to `labels-correos-express-adapter`.
 - temporary legacy host routes through `sauvage-localhost` for affiliate, SkirmBooks, Synapse webhooks/admin, OpenClaw webhooks, and selected SkirmShop legacy paths.
 - `ExternalName: localhost` is intentional because Traefik Edge is pinned to Sauvage with `hostNetwork`.
@@ -57,6 +57,8 @@ Checked from Sauvage against `https://127.0.0.1:7443` with Host headers:
 - `cv.e-dani.com /` -> `200`
 - `cv-manu.e-dani.com /` -> `200`
 - `skirmshop.e-dani.com /files/productos_venta_sin_stock_CATEGORIZADO.xlsx` -> `200`
+- `brain.e-dani.com /` -> `200`
+- `brain.e-dani.com /health` -> `200`
 
 ## Cutover Blockers
 
@@ -64,7 +66,8 @@ Do not stop NGINX until these are resolved or explicitly accepted:
 
 - `firecrawl.e-dani.com`: resolved with `firecrawl-edge-auth`, a Traefik ForwardAuth shim that preserves the old Bearer check. The live Secret is intentionally not stored in Git and should be moved to Vault/ExternalSecret.
 - `openclaw.e-dani.com /openclaw-mem/`: backend port `5002` is not currently listening. Root `/` is routed to `18789`.
-- `images.openclaw.e-dani.com`: still needs a Traefik BasicAuth equivalent from the root-only htpasswd file before NGINX is removed.
+- `images.openclaw.e-dani.com`: no known owner/consumer. It is intentionally not migrated until a real use is found.
+- `obsidian.e-dani.com`: deprecated. It is intentionally not migrated.
 - `synapse.e-dani.com/attachments/`: routed to `edge-static-server` with the same LAN/VPN/Tailscale allowlist.
 - some NGINX routes point to legacy ports that are not currently listening, so Traefik correctly returns `502`:
   - `skirmshop.e-dani.com/sn`

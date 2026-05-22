@@ -167,7 +167,7 @@ spec:
           namespace: skirmshop
           port: 80
     - kind: Rule
-      match: Host(`brain.e-dani.com`) && Path(`/health`)
+      match: Host(`brain.e-dani.com`)
       services:
         - name: skirmshop-brain
           namespace: skirmshop-brain-prod
