@@ -107,6 +107,7 @@ Rollback is to restore Traefik Edge to `7080/7443` and start NGINX again.
 Completed on 2026-05-22:
 
 - NGINX on Sauvage was stopped and left installed/configured for rollback.
+- NGINX service was disabled in systemd so a host reboot does not reclaim `:80/:443`.
 - Traefik Edge Helm release was repaired from corrupt/superseded state and upgraded to a clean deployed release.
 - Traefik Edge now binds hostNetwork `:80` and `:443`.
 - Helm release after cutover: `traefik-edge` revision `10`, status `deployed`.
