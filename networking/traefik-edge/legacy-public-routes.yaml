@@ -443,8 +443,9 @@ spec:
     - kind: Rule
       match: Host(`skirmbooks.e-dani.com`)
       services:
-        - name: sauvage-localhost
-          port: 3050
+        - name: skirmbooks-ui
+          namespace: skirmshop
+          port: 80
     - kind: Rule
       match: Host(`sauvageplay.e-dani.com`)
       services:
