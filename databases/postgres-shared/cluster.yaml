@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: postgres
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.2
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.5
   primaryUpdateStrategy: unsupervised
   primaryUpdateMethod: switchover
   enableSuperuserAccess: true
