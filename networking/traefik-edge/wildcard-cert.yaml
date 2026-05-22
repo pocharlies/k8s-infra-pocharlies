@@ -35,3 +35,22 @@ spec:
   dnsNames:
     - "images.openclaw.e-dani.com"
   renewBefore: 720h
+---
+# Certificate for the Shopify Affiliate app's public domain (skirmshop.es).
+# Cloudflare-proxied; origin must present a valid skirmshop.es cert for
+# Cloudflare "Full (strict)" SSL. Issued via DNS-01 (skirmshop.es is in the
+# same Cloudflare account; letsencrypt-prod has a skirmshop.es solver).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: affiliate-skirmshop-tls
+  namespace: traefik-edge
+spec:
+  secretName: affiliate-skirmshop-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "affiliate.skirmshop.es"
+    - "go.skirmshop.es"
+  renewBefore: 720h

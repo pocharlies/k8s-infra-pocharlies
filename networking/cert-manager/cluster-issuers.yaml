@@ -38,3 +38,11 @@ spec:
         selector:
           dnsZones:
             - e-dani.com
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - skirmshop.es
