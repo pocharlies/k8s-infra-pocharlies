@@ -38,7 +38,6 @@ spec:
           conversionStrategy: Default
           decodingStrategy: None
           metadataPolicy: None
-          nullBytePolicy: Ignore
       - secretKey: SECRET_ACCESS_KEY
         remoteRef:
           key: secret/minio/backup-user
@@ -46,4 +45,3 @@ spec:
           conversionStrategy: Default
           decodingStrategy: None
           metadataPolicy: None
-          nullBytePolicy: Ignore
