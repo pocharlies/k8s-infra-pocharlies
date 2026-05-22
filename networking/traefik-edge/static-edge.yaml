@@ -102,8 +102,11 @@ data:
             self.end_headers()
 
             if not head_only:
-                with target.open("rb") as fh:
-                    self.wfile.write(fh.read())
+                try:
+                    with target.open("rb") as fh:
+                        self.wfile.write(fh.read())
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
 
         def log_message(self, fmt, *args):
             return

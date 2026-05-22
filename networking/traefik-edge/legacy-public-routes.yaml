@@ -258,11 +258,6 @@ spec:
         - name: sauvage-localhost
           port: 3461
     - kind: Rule
-      match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/collections-tree`)
-      services:
-        - name: sauvage-localhost
-          port: 3473
-    - kind: Rule
       match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/product-ai`)
       middlewares:
         - name: strip-product-ai
