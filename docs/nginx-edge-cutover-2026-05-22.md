@@ -21,7 +21,8 @@ Known backup limitation: the SSH user cannot read these root-only files without 
 
 `networking/traefik-edge/legacy-public-routes.yaml` adds:
 
-- standalone k8s public routes for `bundles.e-dani.com`, `sii.e-dani.com`, and `brain.e-dani.com`.
+- standalone k8s public routes for `bundles.e-dani.com` and `sii.e-dani.com`.
+- `edge-brain-public` for `brain.e-dani.com`, with external-dns annotations so the public record stays Cloudflare-proxied while routing to `skirmshop-brain` in `skirmshop-brain-prod`.
 - k8s route for `skirmshop.e-dani.com/labels-cex` to `labels-correos-express-adapter`.
 - temporary legacy host routes through `sauvage-localhost` for affiliate, SkirmBooks, Synapse webhooks/admin, OpenClaw webhooks, and selected SkirmShop legacy paths.
 - `ExternalName: localhost` is intentional because Traefik Edge is pinned to Sauvage with `hostNetwork`.
@@ -31,6 +32,18 @@ The live DaemonSet was patched with:
 `--providers.kubernetescrd.allowExternalNameServices=true`
 
 The Helm release metadata is currently unhealthy/corrupt: `helm status traefik-edge -n traefik-edge` reports `superseded`, and `helm upgrade` fails with release storage errors. The running DaemonSet is healthy, but the Helm release must be repaired before relying on Helm for the final port cutover.
+
+## Brain Public DNS
+
+`brain.e-dani.com` previously existed in Cloudflare as a DNS-only CNAME to `sauvage.e-dani.com`, so LAN clients could hit the raw OVH IP and fail before reaching NGINX/Traefik.
+
+On 2026-05-22 the record was changed to Cloudflare-proxied while preserving the CNAME target. The GitOps source is now `edge-brain-public`, which declares:
+
+- `external-dns.alpha.kubernetes.io/hostname: brain.e-dani.com`
+- `external-dns.alpha.kubernetes.io/target: sauvage.e-dani.com`
+- `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"`
+
+NGINX on Sauvage is still the public listener for now. Its `brain.e-dani.com` vhost was backed up to `/etc/nginx/backups/brain.e-dani.com.20260522180330.pre-traefik-edge` and updated to proxy to Traefik Edge on `https://127.0.0.1:7443`.
 
 ## Direct Traefik Checks
 
