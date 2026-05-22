@@ -8,6 +8,10 @@ kind: IngressRoute
 metadata:
   name: harbor-public
   namespace: traefik-edge
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: harbor.e-dani.com
+    external-dns.alpha.kubernetes.io/target: "sauvage.e-dani.com"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
   entryPoints:
     - websecure
