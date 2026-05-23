@@ -277,29 +277,6 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: edge-affiliate-legacy
-  namespace: traefik-edge
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: affiliate.skirmshop.es,go.skirmshop.es
-    external-dns.alpha.kubernetes.io/target: "57.129.17.172"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-spec:
-  entryPoints:
-    - websecure
-  ingressClassName: traefik-edge
-  routes:
-    - kind: Rule
-      match: Host(`affiliate.skirmshop.es`) || Host(`go.skirmshop.es`)
-      services:
-        - name: affiliate-app
-          namespace: skirmshop
-          port: 80
-  tls:
-    secretName: affiliate-skirmshop-tls
----
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
   name: edge-sauvage-legacy
   namespace: traefik-edge
 spec:
