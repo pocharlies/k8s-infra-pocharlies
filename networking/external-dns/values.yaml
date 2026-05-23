@@ -12,6 +12,7 @@ env:
 policy: upsert-only   # never delete records — safe during migration
 domainFilters:
   - e-dani.com
+  - skirmshop.es   # affiliate app public domain (needs CF token with skirmshop.es Zone access)
 txtOwnerId: k3s-x86-home
 interval: 1m
 logLevel: info
