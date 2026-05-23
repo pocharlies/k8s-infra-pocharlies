@@ -40,6 +40,11 @@ persistence:
       regionendpoint: http://minio-s3.minio.svc.cluster.local:9000
       secure: false
       v4auth: true
+      # Large AI image layers are copied inside the S3 backend when a blob is
+      # committed. Keep that copy single-threaded for MinIO; concurrent multipart
+      # copy intermittently returned IncompleteBody on multi-GB layers.
+      multipartcopymaxconcurrency: "1"
+      multipartcopychunksize: "33554432"
 
 harborAdminPassword: "ChangeMe-Harbor-Bootstrap-2026!"
 

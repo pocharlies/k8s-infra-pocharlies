@@ -44,6 +44,8 @@ additionalArguments:
   - --entrypoints.web.http.redirections.entrypoint.to=websecure
   - --entrypoints.web.http.redirections.entrypoint.scheme=https
   - --entrypoints.websecure.http.tls=true
+  - --entrypoints.websecure.transport.respondingTimeouts.readTimeout=0
+  - --entrypoints.websecure.transport.respondingTimeouts.writeTimeout=0
 
 service:
   type: LoadBalancer

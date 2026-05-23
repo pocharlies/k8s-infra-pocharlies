@@ -78,7 +78,8 @@ spec:
       validate:
         allowExistingViolations: true
         message: >
-          Images must use harbor.e-dani.com, registry.k8s.io, gcr.io/k8s-staging-*,
+          Images must use harbor.e-dani.com, harbor.lan.e-dani.com,
+          registry.k8s.io, gcr.io/k8s-staging-*,
           quay.io, ghcr.io, docker.io/library, or nvcr.io/nvidia.
           Build and push to harbor.e-dani.com/homelab/ for private images.
         deny:
@@ -88,6 +89,7 @@ spec:
                 operator: AnyNotIn
                 value:
                   - harbor.e-dani.com
+                  - harbor.lan.e-dani.com
                   - registry.k8s.io
                   - gcr.io
                   - quay.io

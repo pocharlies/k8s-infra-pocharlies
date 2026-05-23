@@ -2,6 +2,8 @@
 # Helm chart: kyverno/kyverno
 admissionController:
   replicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: ubuntu
   tolerations:
     - key: dedicated
       operator: Equal
