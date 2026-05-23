@@ -387,6 +387,13 @@ kind: IngressRoute
 metadata:
   name: edge-synapse-legacy
   namespace: traefik-edge
+  annotations:
+    # Internal admin tool: resolve to sauvage's Tailscale IP, DNS-only (NOT
+    # Cloudflare-proxied). Proxying would mask the client IP behind Cloudflare
+    # edge IPs and break synapse-admin-allowlist (private ranges only).
+    external-dns.alpha.kubernetes.io/hostname: synapse.e-dani.com
+    external-dns.alpha.kubernetes.io/target: "100.109.183.9"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   entryPoints:
     - websecure
