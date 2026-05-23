@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: synapse-lan-host
+  namespace: traefik-lan
+  labels:
+    app.kubernetes.io/name: synapse-lan-host
+    app.kubernetes.io/part-of: traefik-lan
+spec:
+  ports:
+    - { name: http, port: 18795, targetPort: 18795, protocol: TCP }
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: synapse-lan-host
+  namespace: traefik-lan
+  labels:
+    kubernetes.io/service-name: synapse-lan-host
+    app.kubernetes.io/name: synapse-lan-host
+    app.kubernetes.io/part-of: traefik-lan
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 18795
+endpoints:
+  - addresses:
+      - 100.109.183.9
+    conditions: {}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: lan-synapse
+  namespace: traefik-lan
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-lan
+  routes:
+    - kind: Rule
+      match: Host(`synapse.lan.e-dani.com`)
+      middlewares:
+        - name: authelia
+          namespace: authelia
+      services:
+        - name: synapse-lan-host
+          port: 18795
+  tls:
+    store:
+      name: default
+      namespace: traefik-lan
