@@ -98,6 +98,7 @@ providers:
       - n8n
       - harbor
       - skirmshop-brain-prod
+      - cv
     allowCrossNamespace: true
     allowExternalNameServices: true
     allowEmptyServices: true
@@ -111,6 +112,7 @@ providers:
       - n8n
       - harbor
       - skirmshop-brain-prod
+      - cv
     allowExternalNameServices: true
     allowEmptyServices: true
 
