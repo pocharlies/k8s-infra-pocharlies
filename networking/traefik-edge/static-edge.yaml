@@ -234,25 +234,10 @@ spec:
     - websecure
   ingressClassName: traefik-edge
   routes:
-    - kind: Rule
-      match: Host(`cv.e-dani.com`) && PathPrefix(`/api/oracle`)
-      priority: 2000
-      middlewares:
-        - name: strip-api-oracle
-      services:
-        - name: sauvage-localhost
-          port: 18933
-    - kind: Rule
-      match: Host(`cv.e-dani.com`)
-      priority: 1000
-      services:
-        - name: edge-static-server
-          port: 8080
-    - kind: Rule
-      match: Host(`cv-manu.e-dani.com`)
-      services:
-        - name: edge-static-server
-          port: 8080
+    # cv.e-dani.com and cv-manu.e-dani.com are now served by the dedicated 'cv'
+    # app (repo k8s-cv-pocharlies): cv-dani / cv-manu nginx + cv-oracle, with
+    # their IngressRoutes in the cv namespace (added to traefik-edge's watched
+    # namespaces in values.yaml). Removed from edge-static-server on 2026-05-24.
     - kind: Rule
       match: Host(`skirmshop.e-dani.com`) && PathPrefix(`/files`)
       priority: 2000
