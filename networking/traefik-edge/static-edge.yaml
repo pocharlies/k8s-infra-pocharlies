@@ -15,10 +15,8 @@ data:
     from pathlib import Path
     from urllib.parse import unquote, urlparse
 
-    HOST_ROOTS = {
-        "cv.e-dani.com": ("/srv/cv-dani", True),
-        "cv-manu.e-dani.com": ("/srv/cv-manu", True),
-    }
+    # cv.e-dani.com / cv-manu.e-dani.com migrados al app dedicado 'cv' (k8s).
+    HOST_ROOTS = {}
 
     PREFIX_ROOTS = {
         ("skirmshop.e-dani.com", "/files/"): ("/srv/skirmshop-files", False),
@@ -148,11 +146,11 @@ spec:
           ports:
             - { name: http, containerPort: 8080 }
           readinessProbe:
-            httpGet: { path: /, port: 8080, httpHeaders: [{ name: Host, value: cv.e-dani.com }] }
+            tcpSocket: { port: 8080 }
             initialDelaySeconds: 2
             periodSeconds: 10
           livenessProbe:
-            httpGet: { path: /, port: 8080, httpHeaders: [{ name: Host, value: cv.e-dani.com }] }
+            tcpSocket: { port: 8080 }
             initialDelaySeconds: 5
             periodSeconds: 20
           resources:
@@ -169,8 +167,6 @@ spec:
           volumeMounts:
             - { name: app, mountPath: /app, readOnly: true }
             - { name: tmp, mountPath: /tmp }
-            - { name: cv-dani, mountPath: /srv/cv-dani, readOnly: true }
-            - { name: cv-manu, mountPath: /srv/cv-manu, readOnly: true }
             - { name: skirmshop-files, mountPath: /srv/skirmshop-files, readOnly: true }
             - { name: synapse-email-attachments, mountPath: /srv/synapse-email-attachments, readOnly: true }
             - { name: openclaw-images, mountPath: /srv/openclaw-images, readOnly: true }
@@ -180,10 +176,6 @@ spec:
             name: edge-static-server
         - name: tmp
           emptyDir: {}
-        - name: cv-dani
-          hostPath: { path: /home/ubuntu/cv/dani, type: Directory }
-        - name: cv-manu
-          hostPath: { path: /home/ubuntu/cv/manu, type: Directory }
         - name: skirmshop-files
           hostPath: { path: /var/www/skirmshop-files, type: Directory }
         - name: synapse-email-attachments
