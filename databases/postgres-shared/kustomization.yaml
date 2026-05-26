@@ -8,6 +8,7 @@ resources:
   - cluster.yaml
   - app-databases.yaml
   - shared-rabbitmq.yaml
+  - synapse-rmq-sauvage.yaml
   - scheduledbackup.yaml
 labels:
   - includeSelectors: false

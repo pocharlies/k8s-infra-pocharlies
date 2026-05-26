@@ -1,0 +1,62 @@
+# Bridge Service to the legacy RabbitMQ that still lives on sauvage as a docker
+# container (`shared-rabbitmq`, bound to 100.109.183.9:5672 via Tailscale). The
+# Synapse workflow fabric (engine, dispatcher, gateway, and all
+# `synapse-adapter-*` services) is still running on sauvage under
+# `systemctl --user` and consumes from that RabbitMQ — including the
+# `synapse-adapter-messaging` Hermes worker that handles outbound
+# Telegram / WhatsApp / email.
+#
+# Publishers that run inside k8s (e.g. the picker CronJob) used to point at the
+# in-cluster `shared-rabbitmq.databases.svc.cluster.local`, which silently
+# rebounds their messages with NO_ROUTE because none of the Synapse adapters
+# are connected there. Pointing them at `synapse-rmq.databases.svc.cluster.local`
+# (this Service) routes traffic to the sauvage RabbitMQ so they reach the
+# adapters that actually deliver the messages.
+#
+# Drop this manifest when the Synapse fabric is migrated to the in-cluster
+# RabbitMQ (no consumers will be left on sauvage at that point).
+apiVersion: v1
+kind: Service
+metadata:
+  name: synapse-rmq
+  namespace: databases
+  labels:
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: synapse-rmq-bridge
+  annotations:
+    pocharlies.io/target: "sauvage:5672 (docker shared-rabbitmq)"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: amqp
+      port: 5672
+      protocol: TCP
+      targetPort: 5672
+    - name: management
+      port: 15672
+      protocol: TCP
+      targetPort: 15672
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: synapse-rmq-sauvage
+  namespace: databases
+  labels:
+    kubernetes.io/service-name: synapse-rmq
+    app.kubernetes.io/part-of: shared-infrastructure
+    app.kubernetes.io/component: synapse-rmq-bridge
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 100.109.183.9   # sauvage Tailscale IP, also its k8s node InternalIP
+    conditions:
+      ready: true
+ports:
+  - name: amqp
+    port: 5672
+    protocol: TCP
+  - name: management
+    port: 15672
+    protocol: TCP
