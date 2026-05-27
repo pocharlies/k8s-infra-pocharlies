@@ -258,11 +258,9 @@ spec:
       services:
         - name: sauvage-localhost
           port: 3459
-    - kind: Rule
-      match: Host(`skirmshop.e-dani.com`)
-      services:
-        - name: sauvage-localhost
-          port: 3456
+    # Root route (skirmshop.e-dani.com) is now served by the `rag-app`
+    # IngressRoute in the skirmshop namespace ("Pocharlies Catalog RAG Sync",
+    # k8s-skirmshopshopifyapp-pocharlies). Removed the dead sauvage:3456 catch-all.
   tls:
     store:
       name: default
