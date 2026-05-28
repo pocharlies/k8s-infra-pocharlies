@@ -391,6 +391,14 @@ spec:
     - websecure
   ingressClassName: traefik-edge
   routes:
+    # synapse-admin owns POST /webhooks/brain-audit (token-auth receiver that
+    # publishes a messaging.send envelope for the daily brain audit summary).
+    # More specific than the broad /webhooks prefix below, so traefik picks it.
+    - kind: Rule
+      match: Host(`synapse.e-dani.com`) && Path(`/webhooks/brain-audit`)
+      services:
+        - name: synapse-edge-host
+          port: 18795
     - kind: Rule
       match: Host(`synapse.e-dani.com`) && PathPrefix(`/webhooks`)
       services:
